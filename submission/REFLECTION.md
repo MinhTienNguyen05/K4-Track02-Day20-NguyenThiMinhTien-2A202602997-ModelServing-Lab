@@ -87,13 +87,13 @@ nào **trước**, và vì sao knob đó?
 
 > Từ `make pipeline`. Nói thật cái nào real, cái nào stub — stub **không** mất điểm.
 
-| Day                   | Piece            | Real hay stub? |
-| --------------------- | ---------------- | -------------- |
-| N16 Cloud/IaC         | stub             |                |
-| N17 Data pipeline     | stub             |                |
-| N18 Lakehouse         | stub             |                |
-| N19 Vector + features | stub             |                |
-| N20 Serving           | `llama-server` | real           |
+| Day | Piece | Real hay stub? |
+|---|---|---|
+| N16 Cloud/IaC | Localhost | stub |
+| N17 Data pipeline | In-memory list | stub |
+| N18 Lakehouse | TOY_DOCS dict | stub |
+| N19 Vector + features | Keyword overlap | stub |
+| N20 Serving | `llama-server` | real |
 
 **Latency split** (mean của 3 query, từ output của `pipeline.py`):
 
@@ -141,27 +141,25 @@ Trên chip Apple M4 với kiến trúc Unified Memory, toàn bộ model đã đ�
 > Bỏ trống nếu không làm. Xem `docs/bonus/README.md`. Đừng làm hết — **một** finding sâu
 > ăn điểm hơn năm bảng nông.
 
-**Đã làm:** _<B1 build-compare / B2 sweep nào / B4 challenge nào / B5 lựa chọn nào>_
+**Đã làm:** B5 lựa chọn MLX (make mlx-compare)
 
 **Numbers:**
 
 ```
-before:  <số>
-after:   <số>
-speedup: <X.Y>×
+before:  42.7 tok/s (llama.cpp Metal, TTFT 129.3ms)
+after:   49.3 tok/s (MLX-LM, TTFT 52.8ms)
+speedup: 1.15x
 ```
 
 **Điều này nói lên gì mà deck chưa nói:**
 
-_(để trống nếu bạn không làm phần này)_
+Bài giảng tập trung nhiều vào các kỹ thuật tối ưu cấp độ datacenter GPU (như FA3 vs FA4, PagedAttention), nhưng bài test này chỉ ra một bài học thực tế ở ranh giới triển khai: sự khác biệt sinh ra từ chính runtime framework. Khả năng tối ưu sâu cho kiến trúc Unified Memory của Apple giúp MLX chém đôi thời gian chờ TTFT và tăng tốc độ sinh chữ lên 1.15 lần.   Tuy nhiên, quyết định triển khai không chỉ nằm ở token/giây. Việc chọn MLX đồng nghĩa với "vendor lock-in" vào phần cứng Apple. Khi xây dựng các hệ thống dữ liệu phân tán, việc ưu tiên một khối binary C/C++ độc lập như llama.cpp sẽ giúp duy trì tính khả chuyển (portability). Nó cho phép dễ dàng đóng gói endpoint vào Docker, triển khai qua Kubernetes hoặc giao tiếp mượt mà với các backend Go/Kafka mà không phải gánh theo hệ sinh thái Python cồng kềnh, đồng thời giữ nguyên logic batching khi mở rộng lên hạ tầng Linux/CUDA.
 
 ---
 
 ## 7. Điều làm bạn ngạc nhiên nhất  *(optional)*
 
-_(1–2 câu. Không bắt buộc, nhưng grader đọc hết.)_
-
-_(để trống nếu bạn không làm phần này)_
+Việc ép chip M4 chạy 20 luồng (gấp đôi số core vật lý) không những không giúp hệ thống nhanh hơn mà còn làm tốc độ decode rớt thảm hại hơn 30%. Nó minh họa cực kỳ sắc nét một nguyên lý lõi: khi hệ thống đã chạm trần giới hạn vật lý của băng thông bộ nhớ (memory-bandwidth-bound), việc nhồi nhét thêm năng lực tính toán (compute) không sinh ra giá trị mà chỉ tạo thêm gánh nặng context-switch cho hệ điều hành
 
 ---
 
